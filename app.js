@@ -1,92 +1,100 @@
-// TASK A2: Implement GET with fetch (Random User)
+// TASK B2: Implement POST with fetch (Send Message)
 // Requirements:
-// 1) Show status: "Loading..."
-// 2) Hide previous result (if any)
-// 3) Fetch from: https://randomuser.me/api/
-// 4) If (!res.ok) show error message
-// 5) Parse JSON and render: name + email + avatar
-// 6) Show status: "Loaded successfully."
+// 1) Validate input (if empty → show "Please type a message first.")
+// 2) Show status: "Sending..."
+// 3) Send POST request to: https://httpbin.org/post
+// 4) Include:
+//    - method: "POST"
+//    - headers: { "Content-Type": "application/json" }
+//    - body: JSON.stringify({ message, createdAt })
+// 5) Parse response JSON and display what you sent (echoed JSON)
 //
-// Must-have pattern: async/await, try/catch, res.ok, await res.json()
+// Output requirements:
+// - Show "Sent successfully." on success
+// - Show error message on failure
+// - Display JSON nicely formatted: JSON.stringify(obj, null, 2)
 
-// 0) Access HTML elements (IDs required: btnLoad, status, result)
-const loadUserBtn = document.getElementById("btnLoad");
+// 0) Access HTML elements (IDs required: msg, btnSend, status, output)
+const inputMessage = document.getElementById("msg");
+const sendBtn = document.getElementById("btnSend");
 const statusDiv = document.getElementById("status");
-const resultDiv = document.getElementById("result");
+const resultPre = document.getElementById("output");
 
-// 1) Add click event listener to Load user button
-// Hint: loadUserBtn.addEventListener("click", async () => { ... });
-loadUserBtn.addEventListener("click", async () => {
-  // 2) UI state: show loading + disable button
-  statusDiv.textContent = "Loading...";
-  loadUserBtn.disabled = true;
+// 1) Add click event listener to the Send button
+// Hint: sendBtn.addEventListener("click", async () => { ... });
+sendBtn.addEventListener("click", async () => {
+  // 2) Read and trim the input value
+  const message = inputMessage.value.trim();
+
+  // 3) Validate input: if empty -> show warning and stop
+  if (!message) {
+    statusDiv.textContent = "Please type a message first.";
+    inputMessage.classList.add("border-red-500");
+    setTimeout(() => {
+      inputMessage.classList.remove("border-red-500");
+    }, 2000);
+    return;
+  }
+
+  // 4) UI: show sending state + clear previous output
+  statusDiv.textContent = "Sending...";
+  sendBtn.disabled = true;
+  resultPre.textContent = "";
   
   // ✅ PART C: Add visual feedback for disabled button
-  loadUserBtn.textContent = "Loading...";
-  loadUserBtn.classList.add("opacity-50", "cursor-not-allowed");
-
-  // 3) Hide previous result (required)
-  resultDiv.classList.add("hidden");
-  resultDiv.innerHTML = "";
+  sendBtn.textContent = "Sending...";
+  sendBtn.classList.add("opacity-50", "cursor-not-allowed");
 
   try {
-    // 4) Fetch random user data
-    const res = await fetch("https://randomuser.me/api/");
+    // 5) Send POST request using fetch()
+    const res = await fetch("https://httpbin.org/post", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        createdAt: new Date().toISOString(),
+      }),
+    });
 
-    // 5) Check res.ok (HTTP errors do not throw automatically)
+    // 6) Check res.ok (HTTP errors do not throw automatically)
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    // 6) Parse JSON
+    // 7) Parse JSON response
     const data = await res.json();
-    const user = data.results[0];
 
-    // 7) Render name + email + avatar into resultDiv
-    const fullName = `${user.name.first} ${user.name.last}`;
-    resultDiv.innerHTML = `
-      <div class="flex flex-col items-center">
-        <img 
-          src="${user.picture.large}" 
-          alt="${fullName}" 
-          class="w-32 h-32 rounded-full border-4 border-white shadow-lg mb-4"
-        >
-        <h3 class="text-2xl font-bold text-gray-800 mb-2">${fullName}</h3>
-        <p class="text-gray-600 mb-4">${user.email}</p>
-        <div class="bg-gray-100 rounded-lg p-4 w-full">
-          <p class="text-gray-700"><span class="font-medium">Gender:</span> ${user.gender}</p>
-          <p class="text-gray-700"><span class="font-medium">Location:</span> ${user.location.city}, ${user.location.country}</p>
-          <p class="text-gray-700"><span class="font-medium">Phone:</span> ${user.phone}</p>
-        </div>
-      </div>
-    `;
+    // 8) Display echoed JSON (what we sent back)
+    // Hint: data.json contains the sent body in httpbin
+    resultPre.textContent = JSON.stringify(data.json, null, 2);
 
-    // 8) Show result area (remove "hidden")
-    resultDiv.classList.remove("hidden");
-
-    // 9) Status success
-    statusDiv.textContent = "Loaded successfully.";
+    // 9) Success message
+    statusDiv.textContent = "Sent successfully.";
+    
+    // Clear input on success
+    inputMessage.value = "";
     
   } catch (err) {
-    // 10) Status error
+    // 10) Error message
     statusDiv.textContent = `Error: ${err.message}`;
-    
-    // Show error in result area
-    resultDiv.innerHTML = `
-      <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-        <p class="font-medium">⚠️ Error Loading User</p>
-        <p class="text-sm mt-1">${err.message}</p>
-      </div>
-    `;
-    resultDiv.classList.remove("hidden");
+    resultPre.textContent = `Error details: ${err.message}\n\nPlease try again.`;
     
   } finally {
-    // 11) Re-enable button (always)
-    loadUserBtn.disabled = false;
+    // Optional: re-enable the button
+    sendBtn.disabled = false;
     
     // ✅ PART C: Restore button text and styling
-    loadUserBtn.textContent = "Load user";
-    loadUserBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    sendBtn.textContent = "Send";
+    sendBtn.classList.remove("opacity-50", "cursor-not-allowed");
+  }
+});
+
+// Optional: Add event listener for Enter key in input
+inputMessage.addEventListener("keypress", (e) => {
+  if (e.key === "Enter") {
+    sendBtn.click();
   }
 });
 
 // Initialize status
-statusDiv.textContent = "Ready to load user. Click the button above.";
+statusDiv.textContent = "Ready to send message.";
